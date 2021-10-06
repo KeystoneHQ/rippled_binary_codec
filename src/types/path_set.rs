@@ -1,3 +1,5 @@
+//! A structure that representing `PathSet` type of field in ripple transaction and methods to serializes them to bytes.
+
 use bytes::{BytesMut, BufMut};
 use serde_json::Value;
 use super::amount::currency_code_to_bytes;
@@ -76,7 +78,7 @@ fn path_as_bytes( path: Value) -> Option<Vec<u8>> {
 ///```
 ///
 /// # Errors
-///  If the field is failed to to serialize, `None` will be returned.
+///  If the field is failed to serialize, `None` will be returned.
 pub fn pathset_to_bytes(pathset: Value) -> Option<Vec<u8>>{
   if let Some(pathset) = pathset.as_array(){
     let mut buf = BytesMut::with_capacity(1024);

@@ -1,3 +1,4 @@
+//! A structure that representing `Amount` type of field in ripple transaction and methods to serializes them to bytes.
 use bytes::{BytesMut, BufMut};
 
 /// Helper function for length-prefixed fields including Blob types
@@ -22,7 +23,7 @@ use bytes::{BytesMut, BufMut};
 ///}
 ///```
 /// # Errors
-///  If the field is failed to to encode, `None` will be returned.
+///  If the field is failed to encode, `None` will be returned.
 pub fn vl_encode(input: Vec<u8>) -> Option<Vec<u8>>{
   let mut vl_len: u32 = input.len() as u32;
   let mut result = BytesMut::with_capacity(1024);

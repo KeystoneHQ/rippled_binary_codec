@@ -1,3 +1,4 @@
+//! A structure that representing `AccountID` type of field in ripple transaction and methods to serializes them to bytes.
 use ripple_address_codec::decode_account_id;
 use serde_json::Value;
 use super::address::vl_encode;

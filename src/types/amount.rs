@@ -1,3 +1,5 @@
+//! A structure that representing `Amount` type of field in ripple transaction and methods to serializes them to bytes.
+
 use std::convert::TryInto;
 use ascii::AsciiStr;
 use bytes::{BytesMut, BufMut};
@@ -78,7 +80,7 @@ impl IssuedAmount {
 ///```
 ///
 /// # Errors
-///  If the field is failed to to serialize, `None` will be returned.
+///  If the field is failed to serialize, `None` will be returned.
 pub fn currency_code_to_bytes(input: &str, xrp_ok: bool) -> Option<Vec<u8>>{
   if regex_currency_code_iso_4217(input) {
     if input == "XRP"{
@@ -124,7 +126,7 @@ pub fn currency_code_to_bytes(input: &str, xrp_ok: bool) -> Option<Vec<u8>>{
 ///```
 ///
 /// # Errors
-///  If the field is failed to to serialize, `None` will be returned.
+///  If the field is failed to serialize, `None` will be returned.
 pub fn amount_to_bytes(input: Value) -> Option<Vec<u8>> {
   if let Some(input) = input.as_str() {
     if let Ok(mut amount) = i64::from_str(input){

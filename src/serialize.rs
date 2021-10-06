@@ -1,3 +1,4 @@
+//! The core function to serialize the ripple transaction.
 use bytes::BytesMut;
 use serde_json::{Value, from_str};
 use hex;
