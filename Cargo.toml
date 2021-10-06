@@ -1,7 +1,14 @@
 [package]
 name = "rippled_binary_codec"
-version = "0.1.0"
+version = "0.0.1"
 edition = "2018"
+license = "MIT"
+readme = "README.md"
+keywords = ["ripple", "serialization"]
+categories = ["encoding"]
+include = ["src/**/*.rs", "src/fixtures/definitions.json", "README.md","LICENSE-MIT"]
+rust-version = "1.57"
+description = "Serializing a XRP transaction from JSON into their canonical binary format."
 
 [dependencies]
 serde = { version = "1.0.126", features=["derive"]}

@@ -1,5 +1,28 @@
 use bytes::{BytesMut, BufMut};
 
+/// Helper function for length-prefixed fields including Blob types
+/// and some AccountID types.
+/// Encodes arbitrary binary data with a length prefix. The length of the prefix
+/// is 1-3 bytes depending on the length of the contents:
+/// Content length <= 192 bytes: prefix is 1 byte
+/// 192 bytes < Content length <= 12480 bytes: prefix is 2 bytes
+/// 12480 bytes < Content length <= 918744 bytes: prefix is 3 bytes
+///
+/// # Example
+///
+///```
+///use rippled_binary_codec::types::address::vl_encode;
+///use ripple_address_codec::decode_account_id;
+///
+///fn vl_encode_example(){
+///  let address = "rMBzp8CgpE441cp5PVyA9rpVV7oT8hP3ys";
+///  let vl_content: [u8;20] = decode_account_id(address).unwrap();
+///  let encoded = vl_encode(vl_content.to_vec()).unwrap();
+///  println!("vl_encoded_address: {:?}", encoded); // b"\x14\xddvH?\xac\xde\xe2n`\xd8\xa5\x86\xbbX\xd0\x9f'\x04\\F";
+///}
+///```
+/// # Errors
+///  If the field is failed to to encode, `None` will be returned.
 pub fn vl_encode(input: Vec<u8>) -> Option<Vec<u8>>{
   let mut vl_len: u32 = input.len() as u32;
   let mut result = BytesMut::with_capacity(1024);

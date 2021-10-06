@@ -1,10 +1,3 @@
-/// Serialize a PathSet, which is an array of arrays,
-/// where each inner array represents one possible payment path.
-/// A path consists of "path step" objects in sequence, each with one or
-/// more of "account", "currency", and "issuer" fields, plus (ignored) "type"
-/// and "type_hex" fields which indicate which fields are present.
-/// (We re-create the type field for serialization based on which of the core
-/// 3 fields are present.)
 use bytes::{BytesMut, BufMut};
 use serde_json::Value;
 use super::amount::currency_code_to_bytes;
@@ -54,6 +47,36 @@ fn path_as_bytes( path: Value) -> Option<Vec<u8>> {
   return None;
 }
 
+/// Serialize a PathSet, which is an array of arrays,
+/// where each inner array represents one possible payment path.
+/// A path consists of "path step" objects in sequence, each with one or
+/// more of "account", "currency", and "issuer" fields, plus (ignored) "type"
+/// and "type_hex" fields which indicate which fields are present.
+/// (We re-create the type field for serialization based on which of the core
+/// 3 fields are present.)
+///
+/// # Example
+///
+///```
+///use rippled_binary_codec::types::path_set::pathset_to_bytes;
+///use serde_json::json;
+///
+///fn pathset_to_bytes_example(){
+///  let input = json!([
+///   [
+///     {
+///       "account": "rPDXxSZcuVL3ZWoyU82bcde3zwvmShkRyF",
+///       "type": 1,
+///       "type_hex": "0000000000000001"
+///     }]
+///  ]);
+///  let bytes = pathset_to_bytes(input).unwrap();
+///  println!("serialed pathset: {:?}", bytes); // b"\x01\xf3\xb1\x99ub\xfdt+T\xd4\xeb\xde\xa1\xd6\xae\xa3\xd4\x90k\x8f\x00";
+///}
+///```
+///
+/// # Errors
+///  If the field is failed to to serialize, `None` will be returned.
 pub fn pathset_to_bytes(pathset: Value) -> Option<Vec<u8>>{
   if let Some(pathset) = pathset.as_array(){
     let mut buf = BytesMut::with_capacity(1024);
@@ -89,7 +112,6 @@ mod tests {
           }]
       ]);
       let output = pathset_to_bytes(input).unwrap();
-      print!("output: {:?}", hex::encode(output.clone()));
       let expected =  b"\x01\xf3\xb1\x99ub\xfdt+T\xd4\xeb\xde\xa1\xd6\xae\xa3\xd4\x90k\x8f\x00";
       assert_eq!(output, expected);
     }

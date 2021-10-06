@@ -2,6 +2,19 @@ use ripple_address_codec::decode_account_id;
 use serde_json::Value;
 use super::address::vl_encode;
 
+///  Serialize an AccountID field type. `None` will be returned if the serialization failed.
+///
+/// # Example
+///
+///```
+///use rippled_binary_codec::types::account::account_id_to_bytes;
+///use serde_json::json;
+///
+///fn account_id_to_bytes_example(){
+///   let input= json!("rMBzp8CgpE441cp5PVyA9rpVV7oT8hP3ys");
+///   let bytes = account_id_to_bytes(input);
+///   println!("serialized account id: {:?}", bytes.unwrap()); // b"\x14\xddvH?\xac\xde\xe2n`\xd8\xa5\x86\xbbX\xd0\x9f'\x04\\F"
+/// }
 pub fn account_id_to_bytes(account: Value) -> Option<Vec<u8>>{
   let account = account.as_str()?;
   let vl_content: [u8;20] = decode_account_id(account).ok()?;

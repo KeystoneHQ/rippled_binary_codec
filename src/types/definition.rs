@@ -3,6 +3,7 @@ use serde::de::Error;
 use std::collections::HashMap;
 use serde_json::{Value, from_value};
 
+// Represents `FIELDS` data in `definitions.json` file.
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct DefinitionField {
   pub nth: i32,
@@ -16,6 +17,7 @@ pub struct DefinitionField {
   pub type_name: String
 }
 
+/// Represents  data in `definitions.json` file.
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub struct Definitions {

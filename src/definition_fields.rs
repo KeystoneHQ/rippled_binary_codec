@@ -325,8 +325,6 @@ mod tests {
         });
       let account: Value = fields.get_field_by_name(input.to_owned(), "Account").unwrap();
       let expiration: Value = fields.get_field_by_name(input.to_owned(), "Expiration").unwrap();
-      println!("test_get_field_by_name: account: {:?}", account);
-      println!("test_get_field_by_name: expiration: {:?}", expiration);
       let expected = "rMBzp8CgpE441cp5PVyA9rpVV7oT8hP3ys";
       assert_eq!(account.as_str().unwrap(),expected);
     }

@@ -29,12 +29,12 @@ impl IssuedAmount {
     let mut exp: i32 = i32::from_be_bytes(exp_bytes);
     exp = exp.overflowing_neg().0;
     while mantissa < MIN_MANTISSA && exp > MIN_EXP {
-       mantissa *= 10;
-       exp -= 1;
+      mantissa *= 10;
+      exp -= 1;
     }
     while mantissa > MAX_MANTISSA{
       if exp >= MAX_EXP {
-         return None; 
+        return None; 
       }
       mantissa = mantissa / 10;
       exp += 1;
@@ -59,6 +59,26 @@ impl IssuedAmount {
   }
 }
 
+/// Serializes a currency to bytes
+///
+/// - If the input is "XRP", and `xrp_ok` is true, it will return a 20 zero bytes.
+/// - Otherwise, it will serialize the code by [`AsciiStr::from_ascii`][`from_ascii()`] with leading and trailing zero.
+///
+/// [`from_ascii()`]: https://docs.rs/ascii/1.0.0/ascii/struct.AsciiStr.html#method.from_ascii
+///
+/// # Example
+///
+///```
+///use rippled_binary_codec::types::amount::currency_code_to_bytes;
+///
+///fn currency_code_to_bytes_example(){
+///  let bytes = currency_code_to_bytes("USD", false);
+///  println!("serialized currency code: {:?}", bytes); // b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00USD\x00\x00\x00\x00\x00";
+///}
+///```
+///
+/// # Errors
+///  If the field is failed to to serialize, `None` will be returned.
 pub fn currency_code_to_bytes(input: &str, xrp_ok: bool) -> Option<Vec<u8>>{
   if regex_currency_code_iso_4217(input) {
     if input == "XRP"{
@@ -82,6 +102,29 @@ pub fn currency_code_to_bytes(input: &str, xrp_ok: bool) -> Option<Vec<u8>>{
   return None;
 }
 
+///Serializes an "Amount" type, which can be either XRP or an issued currency:
+/// - XRP: 64 bits; 0, followed by 1 ("is positive"), followed by 62 bit UInt amount
+/// - Issued Currency: 64 bits of amount, followed by 160 bit currency code and
+/// 160 bit issuer AccountID.
+///
+/// # Example
+///
+///```
+///use rippled_binary_codec::types::amount::amount_to_bytes;
+///use serde_json::json;
+///fn amount_to_bytes_example(){
+///  let input = json!({
+///    "currency" : "USD",
+///    "value" : "12.123",
+///    "issuer" : "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn"
+///  });
+///  let bytes = amount_to_bytes(input);
+///  println!("serialized amount: {:?}", bytes); //b"\xd4\xc4N\x94\x96\xdcx\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00USD\x00\x00\x00\x00\x00KN\x9c\x06\xf2B\x96\x07O{\xc4\x8f\x92\xa9y\x16\xc6\xdc^\xa9";
+///}
+///```
+///
+/// # Errors
+///  If the field is failed to to serialize, `None` will be returned.
 pub fn amount_to_bytes(input: Value) -> Option<Vec<u8>> {
   if let Some(input) = input.as_str() {
     if let Ok(mut amount) = i64::from_str(input){
@@ -99,7 +142,6 @@ pub fn amount_to_bytes(input: Value) -> Option<Vec<u8>> {
   }else if let Some(obj) = input.as_object(){
     let mut keys: Vec<String> = obj.keys().map(|item| item.to_string()).collect();
     keys.sort();
-    //TODO refactor
     let currency= keys.get(0)?;
     let issuer= keys.get(1)?;
     let value= keys.get(2)?;
