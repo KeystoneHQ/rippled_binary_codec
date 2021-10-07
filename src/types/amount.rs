@@ -8,10 +8,13 @@ use ripple_address_codec::decode_account_id;
 use serde_json::Value;
 use rust_decimal::prelude::*;
 
+use crate::definition_fields::SerializeField;
+
 const MIN_MANTISSA: i128 = 10i128.pow(15);
 const MAX_MANTISSA: i128 = 10i128.pow(16)-1;
 const MIN_EXP: i32 = -96;
 const MAX_EXP: i32 = 80;
+
 pub struct IssuedAmount{
   pub strnum: String
 }
@@ -74,8 +77,8 @@ impl IssuedAmount {
 ///use rippled_binary_codec::types::amount::currency_code_to_bytes;
 ///
 ///fn currency_code_to_bytes_example(){
-///  let bytes = currency_code_to_bytes("USD", false);
-///  println!("serialized currency code: {:?}", bytes); // b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00USD\x00\x00\x00\x00\x00";
+///  let bytes = currency_code_to_bytes("USD", false).unwrap();
+///  println!("serialized currency code: {:?}", bytes); // b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00USD\x00\x00\x00\x00\x00"
 ///}
 ///```
 ///
@@ -104,78 +107,85 @@ pub fn currency_code_to_bytes(input: &str, xrp_ok: bool) -> Option<Vec<u8>>{
   return None;
 }
 
-///Serializes an "Amount" type, which can be either `XRP` or an `issued currency`:
-/// - XRP: 64 bits; 0, followed by 1 ("is positive"), followed by 62 bit UInt amount.
-/// - Issued Currency: 64 bits of amount, followed by 160 bit currency code and
-/// 160 bit issuer AccountID.
-///
-/// # Example
-///
-///```
-///use rippled_binary_codec::types::amount::amount_to_bytes;
-///use serde_json::json;
-///fn issuer_currency_amount_to_bytes_example(){
-///  let input = json!({
-///    "currency" : "USD",
-///    "value" : "12.123",
-///    "issuer" : "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn"
-///  });
-///  let bytes = amount_to_bytes(input).unwrap();
-///  println!("serialized amount: {:?}", bytes); // b"\xd4\xc4N\x94\x96\xdcx\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00USD\x00\x00\x00\x00\x00KN\x9c\x06\xf2B\x96\x07O{\xc4\x8f\x92\xa9y\x16\xc6\xdc^\xa9";
-///}
-///
-///fn xrp_amount_to_bytes_example(){
-///  let input = json!("5973490832");
-///  let bytes = amount_to_bytes(input).unwrap();
-///  println!("serialized amount: {:?}", bytes); // b"@\x00\x00\x01d\x0c<\x90"
-///}
-///```
-///
-/// # Errors
-///  If the field is failed to serialize, `None` will be returned.
-pub fn amount_to_bytes(input: Value) -> Option<Vec<u8>> {
-  if let Some(input) = input.as_str() {
-    if let Ok(mut amount) = i64::from_str(input){
-      let mut buf = BytesMut::with_capacity(1024);
-      let base: i64 = 10;
-      if amount >= 0 && amount <= base.pow(17) {
-        amount |= i64::from_str_radix("4000000000000000", 16).ok()?;
+/// A structure that representing `Amount` type of field
+pub struct Amount{
+  pub data: Value
+}
+impl SerializeField for Amount {
+  ///Serializes an "Amount" type, which can be either `XRP` or an `issued currency`:
+  /// - XRP: 64 bits; 0, followed by 1 ("is positive"), followed by 62 bit UInt amount.
+  /// - Issued Currency: 64 bits of amount, followed by 160 bit currency code and
+  /// 160 bit issuer `AccountID`.
+  ///
+  /// # Example
+  ///
+  ///```
+  ///use rippled_binary_codec::types::amount::Amount;
+  ///use rippled_binary_codec::definition_fields::SerializeField;
+  ///use serde_json::json;
+  ///fn issuer_currency_amount_to_bytes_example(){
+  ///  let input = json!({
+  ///    "currency" : "USD",
+  ///    "value" : "12.123",
+  ///    "issuer" : "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn"
+  ///  });
+  ///  let bytes = Amount {data: input}.to_bytes().unwrap();
+  ///  println!("serialized amount: {:?}", bytes); // b"\xd4\xc4N\x94\x96\xdcx\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00USD\x00\x00\x00\x00\x00KN\x9c\x06\xf2B\x96\x07O{\xc4\x8f\x92\xa9y\x16\xc6\xdc^\xa9"
+  ///}
+  ///
+  ///fn xrp_amount_to_bytes_example(){
+  ///  let input = json!("5973490832");
+  ///  let bytes =  Amount {data: input}.to_bytes().unwrap();
+  ///  println!("serialized amount: {:?}", bytes); // b"@\x00\x00\x01d\x0c<\x90"
+  ///}
+  ///```
+  ///
+  /// # Errors
+  ///  If the field is failed to serialize, `None` will be returned.
+  fn to_bytes(&self) -> Option<Vec<u8>> {
+    if let Some(input) = self.data.as_str() {
+      if let Ok(mut amount) = i64::from_str(input){
+        let mut buf = BytesMut::with_capacity(1024);
+        let base: i64 = 10;
+        if amount >= 0 && amount <= base.pow(17) {
+          amount |= i64::from_str_radix("4000000000000000", 16).ok()?;
+        }
+        if amount < 0 && amount >= -base.pow(17){
+          amount = amount .overflowing_neg().0;
+        }
+        buf.put_i64(amount);
+        return Some(buf.to_vec());
       }
-      if amount < 0 && amount >= -base.pow(17){
-        amount = amount .overflowing_neg().0;
-      }
-      buf.put_i64(amount);
-      return Some(buf.to_vec());
-    }
-  }else if let Some(obj) = input.as_object(){
-    let mut keys: Vec<String> = obj.keys().map(|item| item.to_string()).collect();
-    keys.sort();
-    let currency= keys.get(0)?;
-    let issuer= keys.get(1)?;
-    let value= keys.get(2)?;
-    if currency.eq(&"currency") && issuer.eq(&"issuer") && value.eq(&"value"){
-      if let Some(strnum) = obj.get("value"){
-        let strnum = strnum.as_str()?;
-        let issued_amt = IssuedAmount {
-          strnum: strnum.to_string()
+    }else if let Some(obj) = self.data.as_object(){
+      let mut keys: Vec<String> = obj.keys().map(|item| item.to_string()).collect();
+      keys.sort();
+      let currency= keys.get(0)?;
+      let issuer= keys.get(1)?;
+      let value= keys.get(2)?;
+      if currency.eq(&"currency") && issuer.eq(&"issuer") && value.eq(&"value"){
+        if let Some(strnum) = obj.get("value"){
+          let strnum = strnum.as_str()?;
+          let issued_amt = IssuedAmount {
+            strnum: strnum.to_string()
+          };
+          let mut result = BytesMut::with_capacity(1024);
+          let issue_amount = issued_amt.to_bytes()?;
+          let currency = obj.get(currency)?;
+          let currency = currency.as_str()?;
+          let currency_code = currency_code_to_bytes(currency, false)?;
+          let address = obj.get(issuer)?;
+          let address = address.as_str()?;
+          let address = decode_account_id(address).ok()?;
+          result.extend_from_slice(&issue_amount);
+          result.extend_from_slice(&currency_code);
+          result.extend_from_slice(&address);
+          return Some(result.to_vec());
         };
-        let mut result = BytesMut::with_capacity(1024);
-        let issue_amount = issued_amt.to_bytes()?;
-        let currency = obj.get(currency)?;
-        let currency = currency.as_str()?;
-        let currency_code = currency_code_to_bytes(currency, false)?;
-        let address = obj.get(issuer)?;
-        let address = address.as_str()?;
-        let address = decode_account_id(address).ok()?;
-        result.extend_from_slice(&issue_amount);
-        result.extend_from_slice(&currency_code);
-        result.extend_from_slice(&address);
-        return Some(result.to_vec());
-      };
+      }
+      return None;
     }
     return None;
   }
-  return None;
 }
 
 #[cfg(test)]
@@ -190,17 +200,17 @@ mod tests {
         "value" : "12.123",
         "issuer" : "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn"
         });
-        let output1= amount_to_bytes(input1);
+        let output1= Amount{data: input1}.to_bytes();
         let expected1 = b"\xd4\xc4N\x94\x96\xdcx\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00USD\x00\x00\x00\x00\x00KN\x9c\x06\xf2B\x96\x07O{\xc4\x8f\x92\xa9y\x16\xc6\xdc^\xa9";
         assert_eq!(output1.unwrap(), expected1);
 
         let input2 = json!("5973490832");
-        let output2= amount_to_bytes(input2);
+        let output2= Amount{data: input2}.to_bytes();
         let expected2 =  b"@\x00\x00\x01d\x0c<\x90";
         assert_eq!(output2.unwrap(), expected2);
 
         let input3 = json!("499999000");
-        let output3= amount_to_bytes(input3);
+        let output3= Amount{data: input3}.to_bytes();
         let expected3 =  b"@\x00\x00\x00\x1d\xcda\x18";
         assert_eq!(output3.unwrap(), expected3);
     }

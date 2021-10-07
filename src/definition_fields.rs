@@ -1,20 +1,26 @@
-//! A `DefinitionFields` structure to represent the [`definitions`](https://github.com/KeystoneHQ/rippled_binary_codec/blob/main/src/fixtures/definitions.json) JSON data and methods to manipulate the fields.
+//! A `DefinitionFields` structure to represent the [`definitions.json`](https://github.com/KeystoneHQ/rippled_binary_codec/blob/main/src/fixtures/definitions.json) JSON data and methods to manipulate the fields.
 
 use std::{cmp::Ordering, collections::BTreeMap, fmt::Debug};
 use bytes::{BufMut, Bytes, BytesMut};
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::from_str;
-use crate::types::{account::account_id_to_bytes, amount::amount_to_bytes, array::array_to_bytes, blob::blob_to_bytes, definition::Definitions, hash::hash_to_bytes, object::object_to_bytes, path_set::pathset_to_bytes};
+use crate::types::{account::Account, amount::Amount, blob::Blob, definition::Definitions, hash::Hash, path_set::PathSet, starray::STArray, stobject::STObject};
+
+/// A trait to be implemented by each field for serialization.
+pub trait SerializeField {
+  fn to_bytes(&self) -> Option<Vec<u8>>;
+}
 
 /// A structure of ripple definitions.
 pub struct DefinitionFields{
   pub definitions: Option<Definitions>
 }
-/// Init a DefinitionFields struct with the [`definitions`](https://github.com/KeystoneHQ/rippled_binary_codec/blob/main/src/fixtures/definitions.json) file.
-///
-/// This [`definitions`](https://github.com/KeystoneHQ/rippled_binary_codec/blob/main/src/fixtures/definitions.json) file should be in sync with the [`official definitions`](https://github.com/ripple/ripple-binary-codec/blob/master/src/enums/definitions.json).
-///
+
 impl DefinitionFields {
+  /// Init a DefinitionFields structure with the [`definitions.json`](https://github.com/KeystoneHQ/rippled_binary_codec/blob/main/src/fixtures/definitions.json) file.
+  ///
+  /// This [`definitions.json`](https://github.com/KeystoneHQ/rippled_binary_codec/blob/main/src/fixtures/definitions.json) file should be in sync with the [`official definitions`](https://github.com/ripple/ripple-binary-codec/blob/master/src/enums/definitions.json).
+  ///
   pub fn new()-> Self{
     let definitions_json: &str = include_str!("fixtures/definitions.json"); 
     Self {
@@ -22,12 +28,13 @@ impl DefinitionFields {
     }
   }
 
-  /// Return a tuple sort key for a given field name.
+  ///Return a tuple sort key for a given field name.
   ///
   /// **tuple sort key**:  (type_order, field_order)
-  /// Where `type_order` and `field_order` are parsed from [`definition.json`](https://github.com/KeystoneHQ/rippled_binary_codec/blob/main/src/fixtures/definitions.json).
   ///
-  /// For example, in [`definition.json`](https://github.com/KeystoneHQ/rippled_binary_codec/blob/main/src/fixtures/definitions.json), it defines:
+  /// Where `type_order` and `field_order` are parsed from [`definitions.json`](https://github.com/KeystoneHQ/rippled_binary_codec/blob/main/src/fixtures/definitions.json).
+  ///
+  /// For example, in [`definitions.json`](https://github.com/KeystoneHQ/rippled_binary_codec/blob/main/src/fixtures/definitions.json), it defines:
   ///
   ///```json
   ///  {
@@ -51,7 +58,9 @@ impl DefinitionFields {
   ///    }
   ///  }
   ///```
-  /// then the `get_field_sort_key` of `Account` field should return (8,1). Where 8 is the `TYPES["AccountID"]` , `1` is `FIELDS["Account"]["nth"]`.
+  /// then the [`get_field_sort_key`()] for `Account` field should return (8,1), where 8 is `TYPES["AccountID"]` , `1` is `FIELDS["Account"]["nth"]`.
+  ///
+  /// [`get_field_sort_key`()]: https://docs.rs/rippled_binary_codec/0.0.2/rippled_binary_codec/definition_fields/struct.DefinitionFields.html#method.get_field_sort_key
   ///
   /// # Example
   ///
@@ -66,7 +75,7 @@ impl DefinitionFields {
   ///```
   ///
   /// # Errors
-  ///  If failed to get the `type_order` or `field_order`, `(-1,-1)` will be returned.
+  ///  If it fails to get the `type_order` or `field_order`, `(-1,-1)` will be returned.
   pub fn get_field_sort_key(&self, field_name: String)-> (i32, i32){
     match self.definitions.clone() {
       Some(definitions)=>{
@@ -154,6 +163,7 @@ impl DefinitionFields {
       return R::deserialize(value).ok();
   }
 
+  ///
   /// # Example
   ///
   ///```
@@ -169,7 +179,7 @@ impl DefinitionFields {
   ///```
   ///
   /// # Errors
-  ///  If the `field_name` is not in [`Definitions`] or `key` is not in the [`crate::types::definition::DefinitionField`], `None` will be returned.
+  ///  If the `field_name` is not in [`definitions.json`] or `key` is not in the [`DefinitionField`][`crate::types::definition::DefinitionField`], `None` will be returned.
   pub fn get_definition_field<R>(&self, field_name: String, key: &str) -> Option<R>
   where
       R: DeserializeOwned,
@@ -200,8 +210,8 @@ impl DefinitionFields {
     return buf.freeze();
   }
 
-  /// Return the unique field ID for a given field name, this field ID consists of the type code ant field code, in 1 to 3 bytes
-  /// depending on whether those values are "common"(<16) or "uncommon"<>=16>
+  /// Return the unique field id for a given field name, this field id consists of the type code ant field code, in 1 to 3 bytes
+  /// depending on whether those values are "common"(<16) or "uncommon"<>=16>.
   pub fn get_field_id(&self, field_name: String) -> Option<Bytes>{
     let definitions = self.definitions.as_ref()?;
     let field_type: String = self.get_definition_field(field_name.clone(), "type")?;
@@ -212,17 +222,17 @@ impl DefinitionFields {
   }
 
   /// Return a bytes object containing the serialized version of a field,
-  /// including it's field ID prefix. `id_prefix` is generated by [`get_field_id()`],
+  /// including it's field id prefix. `id_prefix` is generated by [`get_field_id()`],
   /// `fields` are serialized with specific logic:
   ///
   ///  [`get_field_id()`]: https://docs.rs/rippled_binary_codec/0.0.1/rippled_binary_codec/definition_fields/struct.DefinitionFields.html#method.get_field_id
-  ///  - [`types::account::account_id_to_bytes`][account_id_to_bytes] for serializing **AccountID** type of field.
-  ///  - [`types::amount::amount_to_bytes`][`amount_to_bytes`] for serializing **Amount** type of field.
-  ///  - [`types::bytes::blob_to_bytes`][`blob_to_bytes`] for serializing **Blob** type of field.
-  ///  - [`types::bytes::hash_to_bytes`][`hash_to_bytes`] for serializing **Hash128**,**Hash160**,**Hash256** type of field.
-  ///  - [`types::path_set::pathset_to_bytes`][`pathset_to_bytes`] for serializing **PathSet** type of field.
-  ///  - [`types::bytes::array_to_bytes`][`array_to_bytes`] for serializing **STArray** type of field.
-  ///  - [`types::bytes::object_to_bytes`][`object_to_bytes`] for serializing **STObject** type of field.
+  ///  - [`Account`][`crate::types::account::Account`] for serializing **AccountID** type of field.
+  ///  - [`Amount`][`crate::types::amount::Amount`] for serializing **Amount** type of field.
+  ///  - [`Blob`][`crate::types::blob::Blob`] for serializing **Blob** type of field.
+  ///  - [`Hash`][`crate::types::hash::Hash`] for serializing **Hash128**,**Hash160**,**Hash256** type of field.
+  ///  - [`PathSet`][`crate::types::path_set::PathSet`] for serializing **PathSet** type of field.
+  ///  - [`STArray`][`crate::types::starray::STArray`] for serializing **STArray** type of field.
+  ///  - [`STObject`][`crate::types::stobject::STObject`] for serializing **STObject** type of field.
   ///  - [`to_be_bytes()`] for serializing **UInt8**, **UInt16**, **UInt32** type of field and slice to specific length.
   ///
   /// [`to_be_bytes()`]: https://doc.rust-lang.org/std/primitive.u64.html#method.to_be_bytes
@@ -257,31 +267,40 @@ impl DefinitionFields {
     }
     let slice: Vec<u8> = match field_type.as_str() {
       "AccountID" => {
-        account_id_to_bytes(field_val)
+        Account{data: field_val}.to_bytes()
       },
       "Amount" =>{
-        amount_to_bytes(field_val)
+        Amount{data: field_val}.to_bytes()
       },
       "Blob" =>{
-        blob_to_bytes(field_val)
+        Blob{data: field_val}.to_bytes()
       },
       "Hash128"=>{
-        hash_to_bytes(field_val, 16)
+        Hash{
+          data: field_val,
+          len: 16
+        }.to_bytes()
       },
       "Hash160"=>{
-        hash_to_bytes(field_val, 20)
+        Hash{
+          data: field_val,
+          len: 20
+        }.to_bytes()
       },
       "Hash256"=>{
-        hash_to_bytes(field_val, 32)
+        Hash{
+          data: field_val,
+          len: 32
+        }.to_bytes()
       },
       "PathSet"=>{
-        pathset_to_bytes(field_val)
+        PathSet {data: field_val}.to_bytes()
       },
       "STArray"=>{
-        array_to_bytes(field_val)
+        STArray {data: field_val}.to_bytes()
       },
       "STObject"=>{
-        object_to_bytes(field_val)
+        STObject{data: field_val}.to_bytes()
       },
       "UInt8"=>{
         let input: u64 = field_val.as_u64()?;
