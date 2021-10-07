@@ -17,7 +17,6 @@ fn path_as_bytes( path: Value) -> Option<Vec<u8>> {
           let issuer_key = "issuser";
           if obj.contains_key::<str>(&account_key){
             if let Some(account_value) = obj.get::<str>(&account_key) {
-              print!("path_as_bytes account_value: {}", account_value);
               let account = account_value.as_str()?;
               if let Ok(data) = decode_account_id(account){
                 step_data.put_u8(0x01);
@@ -73,7 +72,7 @@ fn path_as_bytes( path: Value) -> Option<Vec<u8>> {
 ///     }]
 ///  ]);
 ///  let bytes = pathset_to_bytes(input).unwrap();
-///  println!("serialed pathset: {:?}", bytes); // b"\x01\xf3\xb1\x99ub\xfdt+T\xd4\xeb\xde\xa1\xd6\xae\xa3\xd4\x90k\x8f\x00";
+///  println!("serialized pathset: {:?}", bytes); // b"\x01\xf3\xb1\x99ub\xfdt+T\xd4\xeb\xde\xa1\xd6\xae\xa3\xd4\x90k\x8f\x00";
 ///}
 ///```
 ///

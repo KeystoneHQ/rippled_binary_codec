@@ -4,6 +4,25 @@ use serde_json::Value;
 use bytes::BytesMut;
 use crate::definition_fields::DefinitionFields;
 
+/// # Example
+///
+///```
+///use rippled_binary_codec::types::object::object_to_bytes;
+///use serde_json::json;
+///
+///fn object_to_bytes_example(){
+///  let input = json!({
+///     "SignerEntry": {
+///         "Account": "rUpy3eEg8rqjqfUoLeBnZkscbKbFsKXC3v"
+///     }
+///  });
+///  let bytes = object_to_bytes(input);
+///  println!("serialized object: {:?}", bytes); //b"\x81\x14y\x08\xa7\xf0\xed\xd4\x8e\xa8\x96\xc3X\n9\x9f\x0e\xe7\x86\x11\xc8\xe3\xe1"
+///}
+///```
+///
+/// # Errors
+///  If the field is failed to serialize, `None` will be returned. 
 pub fn object_to_bytes(input: Value) -> Option<Vec<u8>>{
   if let Some(data) = input.as_object(){
     let wrapper_keys: Vec<String> = data.keys().cloned().collect();

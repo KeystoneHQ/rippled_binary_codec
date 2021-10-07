@@ -1,4 +1,4 @@
-//! A structure that representing `AccountID` type of field in ripple transaction and methods to serializes them to bytes.
+//! A structure that representing `AccountID` type of field in ripple transaction and methods to serialize them to bytes.
 use ripple_address_codec::decode_account_id;
 use serde_json::Value;
 use super::address::vl_encode;
@@ -16,6 +16,9 @@ use super::address::vl_encode;
 ///   let bytes = account_id_to_bytes(input);
 ///   println!("serialized account id: {:?}", bytes.unwrap()); // b"\x14\xddvH?\xac\xde\xe2n`\xd8\xa5\x86\xbbX\xd0\x9f'\x04\\F"
 /// }
+///```
+/// # Errors
+///  If the field is failed to serialize, `None` will be returned.
 pub fn account_id_to_bytes(account: Value) -> Option<Vec<u8>>{
   let account = account.as_str()?;
   let vl_content: [u8;20] = decode_account_id(account).ok()?;

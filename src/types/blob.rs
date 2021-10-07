@@ -1,9 +1,23 @@
-//! Methods to serializes `Blob` type of fields to bytes.
+//! Methods to serialize `Blob` type of fields to bytes.
 
 use serde_json::Value;
 use super::address::vl_encode;
 use hex::FromHex;
 
+/// # Example
+///
+///```
+///use rippled_binary_codec::types::blob::blob_to_bytes;
+///use serde_json::Value;
+/// fn blob_to_bytes_example(){
+///   let input: Value = Value::from("03EE83BB432547885C219634A1BC407A9DB0474145D69737D09CCDC63E1DEE7FE3");
+///   let bytes = blob_to_bytes(input).unwrap();
+///   println!("serialized blob: {:?}", bytes); // b"!\x03\xee\x83\xbbC%G\x88\\!\x964\xa1\xbc@z\x9d\xb0GAE\xd6\x977\xd0\x9c\xcd\xc6>\x1d\xee\x7f\xe3"
+/// }
+///```
+///
+/// # Errors
+///  If the field is failed to serialize, `None` will be returned.
 pub fn blob_to_bytes(input: Value) -> Option<Vec<u8>>{
   let input = input.as_str()?;
   if let Ok(input) = Vec::from_hex(input){

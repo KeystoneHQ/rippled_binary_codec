@@ -8,4 +8,4 @@ pub mod path_set;
 pub mod hash;
 pub mod blob;
 pub mod array;
-pub mod objects;
+pub mod object;

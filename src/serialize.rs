@@ -6,8 +6,6 @@ use crate::definition_fields::DefinitionFields;
 
 /// The function serialize_tx takes a transaction JSON and returns a bytes object representing
 /// the transaction in binary format.
-/// If for_signing=true, then only signing fields are serialized, so you can use the output to sign
-/// the transaction.
 /// Each `Field` is serialized by specific `field_to_bytes` defined in [`DefinitionFields`].
 ///
 /// # Example
@@ -35,7 +33,11 @@ use crate::definition_fields::DefinitionFields;
 ///    "TxnSignature": "30440220143759437C04F7B61F012563AFE90D8DAFC46E86035E1D965A9CED282C97D4CE02204CFD241E86F17E011298FC1A39B63386C74306A5DE047E213B0F29EFA4571C2C",
 ///    "hash": "73734B611DDA23D3F5F62E20A173B78AB8406AC5015094DA53F53D39B9EDB06C"
 ///    }"#;
-///   serialize_tx(input.to_string(), true);
+///   // If `for_signing` = true, then only signing fields are serialized. For Example: `TxnSignature` will not be serialized because it's not a signing fieled. Whether
+///   // a field is for signing or not is defined by in [definition.json](https://github.com/KeystoneHQ/rippled_binary_codec/blob/main/src/fixtures/definitions.json).
+///   let serialized_for_signing = serialize_tx(input.to_string(), true); //"120007220008000024001ABED82A2380BF2C2019001ABED764D55920AC9391400000000000000000000000000055534400000000000A20B3C85F482532A9578DBB3950B85CA06594D165400000037E11D60068400000000000000A732103EE83BB432547885C219634A1BC407A9DB0474145D69737D09CCDC63E1DEE7FE38114DD76483FACDEE26E60D8A586BB58D09F27045C46"
+///   // If `for_signing` = false, `TxnSignature` will be serialized.
+///   let serialized_not_for_signing = serialize_tx(input.to_string(), false); // "120007220008000024001ABED82A2380BF2C2019001ABED764D55920AC9391400000000000000000000000000055534400000000000A20B3C85F482532A9578DBB3950B85CA06594D165400000037E11D60068400000000000000A732103EE83BB432547885C219634A1BC407A9DB0474145D69737D09CCDC63E1DEE7FE3744630440220143759437C04F7B61F012563AFE90D8DAFC46E86035E1D965A9CED282C97D4CE02204CFD241E86F17E011298FC1A39B63386C74306A5DE047E213B0F29EFA4571C2C8114DD76483FACDEE26E60D8A586BB58D09F27045C46"
 /// }
 /// ```
 ///
@@ -51,9 +53,9 @@ pub fn serialize_tx(tx: String, for_signing: bool) -> Option<String> {
     let mut fields_as_bytes = BytesMut::with_capacity(1024);
     for field_name in field_order {
       let is_serialized = fields.get_definition_field(field_name.clone(), "isSerialized");
-      let is_for_signing = fields.get_definition_field(field_name.clone(), "isSigningField");
+      let is_signing_field = fields.get_definition_field(field_name.clone(), "isSigningField");
       if is_serialized == Some(true) {
-        if for_signing && is_for_signing != Some(true) {
+        if for_signing && is_signing_field != Some(true) {
           continue
         }
         let field_val =  fields.get_field_by_name(tx.clone(), field_name.as_str())?;

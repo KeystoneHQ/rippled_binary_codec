@@ -1,11 +1,11 @@
 # Rippled Binary Codec
 
-**rippled_binary_codec is a library for serializing a transaction from JSON into their canonical binary format.**
+**rippled_binary_codec is a library for serializing a transaction into their [canonical binary format](https://xrpl.org/serialization.html).**
+
+[![Build status](https://badge.buildkite.com/170d7549808cd3c40460587473bdbdf874a118e58328120932.svg)](https://buildkite.com/keystonehq/rippled-binary-codec)
 
 The core function `serialize_tx` takes a transaction JSON and returns a bytes object representing
 the transaction in binary format.
-If for_signing=true, then only signing fields are serialized, so you can use the output to sign
-the transaction.
 
 ## Example
 

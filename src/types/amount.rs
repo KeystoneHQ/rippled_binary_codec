@@ -1,4 +1,4 @@
-//! A structure that representing `Amount` type of field in ripple transaction and methods to serializes them to bytes.
+//! A structure that representing `Amount` type of field in ripple transaction and methods to serialize them to bytes.
 
 use std::convert::TryInto;
 use ascii::AsciiStr;
@@ -104,8 +104,8 @@ pub fn currency_code_to_bytes(input: &str, xrp_ok: bool) -> Option<Vec<u8>>{
   return None;
 }
 
-///Serializes an "Amount" type, which can be either XRP or an issued currency:
-/// - XRP: 64 bits; 0, followed by 1 ("is positive"), followed by 62 bit UInt amount
+///Serializes an "Amount" type, which can be either `XRP` or an `issued currency`:
+/// - XRP: 64 bits; 0, followed by 1 ("is positive"), followed by 62 bit UInt amount.
 /// - Issued Currency: 64 bits of amount, followed by 160 bit currency code and
 /// 160 bit issuer AccountID.
 ///
@@ -114,14 +114,20 @@ pub fn currency_code_to_bytes(input: &str, xrp_ok: bool) -> Option<Vec<u8>>{
 ///```
 ///use rippled_binary_codec::types::amount::amount_to_bytes;
 ///use serde_json::json;
-///fn amount_to_bytes_example(){
+///fn issuer_currency_amount_to_bytes_example(){
 ///  let input = json!({
 ///    "currency" : "USD",
 ///    "value" : "12.123",
 ///    "issuer" : "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn"
 ///  });
-///  let bytes = amount_to_bytes(input);
-///  println!("serialized amount: {:?}", bytes); //b"\xd4\xc4N\x94\x96\xdcx\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00USD\x00\x00\x00\x00\x00KN\x9c\x06\xf2B\x96\x07O{\xc4\x8f\x92\xa9y\x16\xc6\xdc^\xa9";
+///  let bytes = amount_to_bytes(input).unwrap();
+///  println!("serialized amount: {:?}", bytes); // b"\xd4\xc4N\x94\x96\xdcx\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00USD\x00\x00\x00\x00\x00KN\x9c\x06\xf2B\x96\x07O{\xc4\x8f\x92\xa9y\x16\xc6\xdc^\xa9";
+///}
+///
+///fn xrp_amount_to_bytes_example(){
+///  let input = json!("5973490832");
+///  let bytes = amount_to_bytes(input).unwrap();
+///  println!("serialized amount: {:?}", bytes); // b"@\x00\x00\x01d\x0c<\x90"
 ///}
 ///```
 ///
