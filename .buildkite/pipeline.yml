@@ -1,0 +1,4 @@
+- label: ":rust: :cargo: Test"
+  command: "auto/test"
+  agents:
+    queue: keystone-staging:build

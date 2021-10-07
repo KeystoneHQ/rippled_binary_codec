@@ -1,0 +1,6 @@
+#!/bin/bash
+
+docker run --rm \
+-v ${PWD}:/rippled_binary_codec \
+-w /rippled_binary_codec \
+rustlang/rust:nightly cargo test
