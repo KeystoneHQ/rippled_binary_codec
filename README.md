@@ -9,6 +9,17 @@ the transaction in binary format.
 
 ## Example
 
+A basis transaction serialization example.
+
+Make sure you import the rippled_binary_codec crate on Cargo.toml:
+
+```shell
+[dependencies]
+rippled_binary_codec = 0.0.3
+```
+
+Then, on your main.rs:
+
 ```rust
 use rippled_binary_codec::serialize::serialize_tx;
 
@@ -35,3 +46,31 @@ fn serialize_tx_example(){
   serialize_tx(input.to_string(), true);
 }
 ```
+
+For a larger "real world" example, see the [crypto-coin-lib](https://github.com/KeystoneHQ/crypto-coin-lib.git) repository.
+
+## Contributing
+
+Thanks for your help improving the project! We are so happy to have you! PRs and Issues are welcomed.
+
+## Related Projects
+
+The serialization processes are implemented in different programming languages:
+
+- In C++ in the [rippled code base](https://github.com/ripple/rippled/blob/develop/src/ripple/protocol/impl/STObject.cpp).
+- In Javascript [rippled_binary_codec](https://github.com/ripple/ripple-binary-codec/) package.
+- In Python 3 this repository's [code samples section](https://github.com/XRPLF/xrpl-dev-portal/blob/master/content/_code-samples/tx-serialization/serialize.py).
+
+Additionally, the following libraries also provide serialization support:
+
+- [xrpl4j](https://github.com/XRPLF/xrpl4j): A pure Java implementation of the core functionality necessary to interact with the XRP Ledger.
+- [xrpl](https://www.npmjs.com/package/xrpl): A JavaScript/TypeScript API for interacting with the XRP Ledger.
+- [xrpl-py](https://github.com/XRPLF/xrpl-py): A pure Python implementation for interacting with the XRP Ledger.
+
+## License
+
+This project is licensed under the [MIT license](https://github.com/KeystoneHQ/rippled_binary_codec/blob/main/LICENSE-MIT)
+
+## Contribution
+
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in `rippled_binary_codec` by you, shall be licensed as MIT, without any additional terms or conditions.
