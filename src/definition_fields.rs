@@ -376,8 +376,8 @@ mod tests {
     fn test_load_def() {
         let definitions = DefinitionFields::new().definitions.unwrap();
         assert_eq!(definitions.types.len(),20);
-        assert_eq!(definitions.transaction_types.len(),24);
-        assert_eq!(definitions.transaction_results.len(),97);
+        assert_eq!(definitions.transaction_types.len(),31);
+        assert_eq!(definitions.transaction_results.len(),127);
         let generic_field = DefinitionField {
           nth: 0,
           is_signing_field: false,
