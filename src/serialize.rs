@@ -200,4 +200,12 @@ mod tests {
       let output = serialize_tx(input.to_string(), true);
       assert_eq!(output.unwrap(), expected);
     }
+
+    #[test]
+    fn test_serialize_tx5(){
+        let input = r#"{"TransactionType":"AccountDelete","Fee":"2000000","Flags":2147483648,"Destination":"rNp5zaiaR3maZ8zALz5CWnqRYXWkeGhteS","Account":"rwEJf6YSKALUaxRhvJ1S81PPmXzWhDW8on","Sequence":23159180,"LastLedgerSequence":23164152,"SigningPubKey":"02B87CEB1507849B6473773155827C0B8C15CB311C6876FBD7FAB95F06D3E18E39"}"#;
+        let expected= "1200152280000000240161618C201B016174F86840000000001E8480732102B87CEB1507849B6473773155827C0B8C15CB311C6876FBD7FAB95F06D3E18E398114656D3E2961EFABDED0C9CDCFB39FC78D01E9A77683148EED191963FEB29D532F04958BFA087A45F742C7";
+        let output = serialize_tx(input.to_string(), true);
+        assert_eq!(output.unwrap(), expected);
+    }
 }
