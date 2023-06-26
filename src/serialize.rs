@@ -3,6 +3,8 @@ use bytes::BytesMut;
 use serde_json::{Value, from_str};
 use hex;
 use crate::definition_fields::DefinitionFields;
+use alloc::string::{ToString, String};
+use alloc::vec::Vec;
 
 /// The function serialize_tx takes a transaction JSON and returns a bytes object representing
 /// the transaction in binary format.
