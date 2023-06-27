@@ -101,7 +101,7 @@ pub fn currency_code_to_bytes(input: &str, xrp_ok: bool) -> Option<Vec<u8>>{
       return Some(result.to_vec());
     }
   }else if regex_currency_code_hex(input){
-    let input_slice = AsciiStr::from_ascii(input).map(|r| r.as_bytes().to_vec()).ok()?;
+    let input_slice = hex::decode(input).ok()?;
     return Some(input_slice);
   }
   return None;

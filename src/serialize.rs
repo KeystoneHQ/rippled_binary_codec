@@ -12,7 +12,7 @@ use crate::definition_fields::DefinitionFields;
 ///
 /// ```
 /// use rippled_binary_codec::serialize::serialize_tx;
-/// 
+///
 /// fn serialize_tx_example(){
 ///  // The input json string will be deserialized to serde_json:Value.
 ///  let input= r#"{
@@ -75,6 +75,27 @@ mod tests {
     #[test]
     fn test_serialize_tx(){
       let input= r#"{
+    "TransactionType": "TrustSet",
+    "LimitAmount": {
+        "currency": "534F4C4F00000000000000000000000000000000",
+        "issuer": "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz",
+        "value": "10000000000"
+    },
+    "Flags": 2147614720,
+    "Account": "rGUmkyLbvqGF3hwX4qwGHdrzLdY2Qpskum",
+    "Fee": "12",
+    "Sequence": 79991857,
+    "LastLedgerSequence": 80410003,
+    "SigningPubKey": "03F5C5BB1D19EC710D3D7FAD199AF10CF8BC1D11348E5B3765C0B0B9C0BEC32879"
+}"#;
+      let expected= "12001422800200002404C49431201B04CAF59363D7038D7EA4C68000534F4C4F000000000000000000000000000000001EB3EAA3AD86242E1D51DC502DD6566BD39E06A668400000000000000C732103F5C5BB1D19EC710D3D7FAD199AF10CF8BC1D11348E5B3765C0B0B9C0BEC328798114A6C3D314FB5418627AB22D9DDF6C18AED5F6CA89";
+      let output = serialize_tx(input.to_string(), true);
+      assert_eq!(output.unwrap(), expected);
+    }
+
+    #[test]
+    fn test_serialize_tx_1(){
+        let input= r#"{
         "Account": "rMBzp8CgpE441cp5PVyA9rpVV7oT8hP3ys",
         "Expiration": 595640108,
         "Fee": "10",
@@ -92,10 +113,11 @@ mod tests {
         "TxnSignature": "30440220143759437C04F7B61F012563AFE90D8DAFC46E86035E1D965A9CED282C97D4CE02204CFD241E86F17E011298FC1A39B63386C74306A5DE047E213B0F29EFA4571C2C",
         "hash": "73734B611DDA23D3F5F62E20A173B78AB8406AC5015094DA53F53D39B9EDB06C"
         }"#;
-      let expected= "120007220008000024001ABED82A2380BF2C2019001ABED764D55920AC9391400000000000000000000000000055534400000000000A20B3C85F482532A9578DBB3950B85CA06594D165400000037E11D60068400000000000000A732103EE83BB432547885C219634A1BC407A9DB0474145D69737D09CCDC63E1DEE7FE38114DD76483FACDEE26E60D8A586BB58D09F27045C46";
-      let output = serialize_tx(input.to_string(), true);
-      assert_eq!(output.unwrap(), expected);
+        let expected= "120007220008000024001ABED82A2380BF2C2019001ABED764D55920AC9391400000000000000000000000000055534400000000000A20B3C85F482532A9578DBB3950B85CA06594D165400000037E11D60068400000000000000A732103EE83BB432547885C219634A1BC407A9DB0474145D69737D09CCDC63E1DEE7FE38114DD76483FACDEE26E60D8A586BB58D09F27045C46";
+        let output = serialize_tx(input.to_string(), true);
+       assert_eq!(output.unwrap(), expected);
     }
+
     #[test]
     fn test_serialize_tx2(){
       let input= r#"{
