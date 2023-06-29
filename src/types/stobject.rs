@@ -3,6 +3,8 @@
 use serde_json::Value;
 use bytes::BytesMut;
 use crate::definition_fields::{DefinitionFields, SerializeField};
+use alloc::vec::Vec;
+use alloc::string::{String,ToString};
 
 /// A structure represents `STObject` type of field.
 pub struct STObject{

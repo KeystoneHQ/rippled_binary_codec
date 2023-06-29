@@ -1,6 +1,8 @@
 //! Methods to serialize `Hash128`, `Hash160`, `Hash256` type of fields to bytes.
 
 use serde_json::Value;
+use alloc::string::ToString;
+use alloc::vec::Vec;
 
 use crate::definition_fields::SerializeField;
 

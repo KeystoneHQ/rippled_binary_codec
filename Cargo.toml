@@ -4,22 +4,25 @@ version = "0.0.5"
 edition = "2018"
 license = "MIT"
 readme = "README.md"
-keywords = ["ripple", "serialization"]
+keywords = ["ripple", "serialization", "no_std"]
 categories = ["encoding"]
-include = ["src/**/*.rs", "src/fixtures/definitions.json", "README.md","LICENSE-MIT"]
+include = ["src/**/*.rs", "src/fixtures/definitions.json", "README.md", "LICENSE-MIT"]
 rust-version = "1.57"
 description = "Serializing a XRP transaction from JSON into their canonical binary format."
 documentation = "https://docs.rs/rippled_binary_codec"
 repository = "https://github.com/KeystoneHQ/rippled_binary_codec.git"
 
 [dependencies]
-serde = { version = "1.0.126", features=["derive"]}
-serde-value = "0.7.0"
-ripple-address-codec = "0.1.1"
+serde = { version = "1.0.139", default-features = false }
 proc-macro-regex = "~1.0.0"
-rust_decimal = "1.15"
+rust_decimal = { version = "1.15", default-features = false }
 rust_decimal_macros = "1.15"
-serde_json = "1.0"
-hex = "0.4.3"
+serde_json = {version="1.0.95", default-features=false, features=['alloc']}
+serde_derive = { version = "1.0.159" }
+hex = { version = "0.4.3", default-features = false, features = ["alloc"] }
 ascii = { version = "1.0", default-features = false }
-bytes="1.1.0"
+bytes = { version = "1.1.0", default-features = false }
+base-x = { version = "0.2.11", default-features = false }
+cryptoxide = "0.4"
+thiserror = { version = "1.0", package = "thiserror-core", default-features = false }
+serde-value = { git = "https://github.com/KeystoneHQ/serde-value.git", tag = "v0.7.0_no_std" }

@@ -4,6 +4,7 @@ use serde_json::Value;
 use hex::FromHex;
 use crate::definition_fields::SerializeField;
 use super::account::vl_encode;
+use alloc::vec::Vec;
 
 pub struct Blob{
   pub data: Value

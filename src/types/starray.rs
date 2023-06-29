@@ -3,6 +3,9 @@
 use serde_json::Value;
 use crate::definition_fields::{DefinitionFields, SerializeField};
 use bytes::BytesMut;
+use alloc::vec::Vec;
+use alloc::string::{ToString, String};
+use crate::alloc::borrow::ToOwned;
 
 /// A structure represents `STArray` type of field.
 pub struct STArray {

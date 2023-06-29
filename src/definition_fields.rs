@@ -1,9 +1,13 @@
 //! A `DefinitionFields` structure to represent the [`definitions.json`](https://github.com/KeystoneHQ/rippled_binary_codec/blob/main/src/fixtures/definitions.json) JSON data and methods to manipulate the fields.
 
-use std::{cmp::Ordering, collections::BTreeMap, fmt::Debug};
+use core::{cmp::Ordering, fmt::Debug};
 use bytes::{BufMut, Bytes, BytesMut};
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::from_str;
+use alloc::string::{String, ToString};
+use alloc::vec::Vec;
+use crate::alloc::borrow::ToOwned;
+use alloc::collections::btree_map::BTreeMap;
 use crate::types::{account::Account, amount::Amount, blob::Blob, definition::Definitions, hash::Hash, path_set::PathSet, starray::STArray, stobject::STObject};
 
 /// A trait to be implemented by each field for serialization.
@@ -22,7 +26,7 @@ impl DefinitionFields {
   /// This [`definitions.json`](https://github.com/KeystoneHQ/rippled_binary_codec/blob/main/src/fixtures/definitions.json) file should be in sync with the [`official definitions`](https://github.com/ripple/ripple-binary-codec/blob/master/src/enums/definitions.json).
   ///
   pub fn new()-> Self{
-    let definitions_json: &str = include_str!("fixtures/definitions.json"); 
+    let definitions_json: &str = include_str!("fixtures/definitions.json");
     Self {
       definitions: from_str::<Definitions>(definitions_json).ok()
     }
@@ -116,13 +120,13 @@ impl DefinitionFields {
       sort_key.push(field);
     }
     keys.sort_by(|a, b| {
-          let a_sort_key = self.get_field_sort_key(a.to_string());
-          let b_sort_key = self.get_field_sort_key(b.to_string());
-          match a_sort_key.0.cmp(&b_sort_key.0) {
-              Ordering::Equal => a_sort_key.1.cmp(&b_sort_key.1),
-              other => other,
-          }
-      });
+      let a_sort_key = self.get_field_sort_key(a.to_string());
+      let b_sort_key = self.get_field_sort_key(b.to_string());
+      match a_sort_key.0.cmp(&b_sort_key.0) {
+        Ordering::Equal => a_sort_key.1.cmp(&b_sort_key.1),
+        other => other,
+      }
+    });
     return keys
   }
   /// Get the value of field in data.
@@ -148,19 +152,19 @@ impl DefinitionFields {
   /// # Errors
   ///  If the field is failed to get, `None` will be returned.
   pub fn get_field_by_name<T, R>(&self, data: T, field: &str) -> Option<R>
-  where
-      T: Serialize + Debug,
-      R: DeserializeOwned,
+    where
+        T: Serialize + Debug,
+        R: DeserializeOwned,
   {
-      let mut map = match serde_value::to_value(data) {
-          Ok(serde_value::Value::Map(map)) => map,
-          _ => {
-            return None;
-          },
-      };
-      let key = serde_value::Value::String(field.to_owned());
-      let value = map.remove(&key)?;
-      return R::deserialize(value).ok();
+    let mut map = match serde_value::to_value(data) {
+      Ok(serde_value::Value::Map(map)) => map,
+      _ => {
+        return None;
+      },
+    };
+    let key = serde_value::Value::String(field.to_owned());
+    let value = map.remove(&key)?;
+    return R::deserialize(value).ok();
   }
 
   ///
@@ -181,13 +185,13 @@ impl DefinitionFields {
   /// # Errors
   ///  If the `field_name` is not in [`definitions.json`] or `key` is not in the [`DefinitionField`][`crate::types::definition::DefinitionField`], `None` will be returned.
   pub fn get_definition_field<R>(&self, field_name: String, key: &str) -> Option<R>
-  where
-      R: DeserializeOwned,
+    where
+        R: DeserializeOwned,
   {
-      let definitions = self.definitions.as_ref()?;
-      let fields: BTreeMap<serde_value::Value,serde_value::Value> = self.get_field_by_name(definitions.to_owned(),"FIELDS")?;
-      let field: BTreeMap<serde_value::Value, serde_value::Value> = self.get_field_by_name(fields, field_name.as_str())?;
-      return self.get_field_by_name(field, key)?;
+    let definitions = self.definitions.as_ref()?;
+    let fields: BTreeMap<serde_value::Value,serde_value::Value> = self.get_field_by_name(definitions.to_owned(),"FIELDS")?;
+    let field: BTreeMap<serde_value::Value, serde_value::Value> = self.get_field_by_name(fields, field_name.as_str())?;
+    return self.get_field_by_name(field, key)?;
   }
 
   fn cal_field_id(&self, field_code: i32, type_code: i32) -> Bytes {
@@ -218,7 +222,7 @@ impl DefinitionFields {
     let field_code =  self.get_definition_field(field_name, "nth")?;
     let types: BTreeMap<serde_value::Value,serde_value::Value> = self.get_field_by_name(definitions.to_owned(), "TYPES")?;
     let type_code: i32 = self.get_field_by_name(types, &field_type)?;
-    return Some(self.cal_field_id(field_code, type_code)); 
+    return Some(self.cal_field_id(field_code, type_code));
   }
 
   /// Return a bytes object containing the serialized version of a field,
@@ -329,96 +333,96 @@ impl DefinitionFields {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
+  use std::collections::HashMap;
 
-    use serde_json::{Value, json};
+  use serde_json::{Value, json};
 
-    use crate::types::definition::DefinitionField;
+  use crate::types::definition::DefinitionField;
 
-    use super::*;
+  use super::*;
 
-        #[test]
-    fn test_ordering_fields() {
-      let fields = DefinitionFields::new();
-      let before_sort: Vec<String> = vec!["Account", "Expiration", "Fee", "Flags", "OfferSequence", "Sequence", "SigningPubKey", "TakerGets", "TakerPays", "TransactionType", "TxnSignature", "hash"].into_iter().map(String::from).collect();
-      let after_sort: Vec<String> = fields.ordering_fields(before_sort);
+  #[test]
+  fn test_ordering_fields() {
+    let fields = DefinitionFields::new();
+    let before_sort: Vec<String> = vec!["Account", "Expiration", "Fee", "Flags", "OfferSequence", "Sequence", "SigningPubKey", "TakerGets", "TakerPays", "TransactionType", "TxnSignature", "hash"].into_iter().map(String::from).collect();
+    let after_sort: Vec<String> = fields.ordering_fields(before_sort);
 
-      let expected: Vec<String> = vec!["TransactionType", "Flags", "Sequence", "Expiration", "OfferSequence", "hash", "TakerPays", "TakerGets", "Fee", "SigningPubKey", "TxnSignature", "Account"].into_iter().map(String::from).collect();
+    let expected: Vec<String> = vec!["TransactionType", "Flags", "Sequence", "Expiration", "OfferSequence", "hash", "TakerPays", "TakerGets", "Fee", "SigningPubKey", "TxnSignature", "Account"].into_iter().map(String::from).collect();
 
-      assert_eq!(after_sort, expected);
-    }
+    assert_eq!(after_sort, expected);
+  }
 
-    #[test]
-    fn test_get_field_sort_key(){
-      let fields = DefinitionFields::new();
-      let account_sort_key = fields.get_field_sort_key("Account".to_string());
-      assert_eq!(account_sort_key,(8,1));
-    }
+  #[test]
+  fn test_get_field_sort_key(){
+    let fields = DefinitionFields::new();
+    let account_sort_key = fields.get_field_sort_key("Account".to_string());
+    assert_eq!(account_sort_key,(8,1));
+  }
 
-    #[test]
-    fn test_field_to_bytes(){
-      let fields = DefinitionFields::new();
-      let expiration: Vec<u8> = fields.field_to_bytes("Expiration".to_string(),Value::from(595640108)).unwrap();
-      assert_eq!(expiration, [42, 35, 128, 191, 44]);
-    }
-    #[test]
-    fn test_get_field_by_name(){
-      let fields = DefinitionFields::new();
-      let input= json!({
+  #[test]
+  fn test_field_to_bytes(){
+    let fields = DefinitionFields::new();
+    let expiration: Vec<u8> = fields.field_to_bytes("Expiration".to_string(),Value::from(595640108)).unwrap();
+    assert_eq!(expiration, [42, 35, 128, 191, 44]);
+  }
+  #[test]
+  fn test_get_field_by_name(){
+    let fields = DefinitionFields::new();
+    let input= json!({
         "Account": "rMBzp8CgpE441cp5PVyA9rpVV7oT8hP3ys",
         "Expiration": 595640108
         });
-      let account: Value = fields.get_field_by_name(input.to_owned(), "Account").unwrap();
-      let expected = "rMBzp8CgpE441cp5PVyA9rpVV7oT8hP3ys";
-      assert_eq!(account.as_str().unwrap(),expected);
-    }
-    #[test]
-    fn test_load_def() {
-        let definitions = DefinitionFields::new().definitions.unwrap();
-        assert_eq!(definitions.types.len(),20);
-        assert_eq!(definitions.transaction_types.len(),31);
-        assert_eq!(definitions.transaction_results.len(),127);
-        let generic_field = DefinitionField {
-          nth: 0,
-          is_signing_field: false,
-          is_serialized: false,
-          is_vl_encoded: false,
-          type_name: String::from("Unknown")
-        };
-        assert_eq!(definitions.fields.get("Generic"),Some(&generic_field));
-    }
+    let account: Value = fields.get_field_by_name(input.to_owned(), "Account").unwrap();
+    let expected = "rMBzp8CgpE441cp5PVyA9rpVV7oT8hP3ys";
+    assert_eq!(account.as_str().unwrap(),expected);
+  }
+  #[test]
+  fn test_load_def() {
+    let definitions = DefinitionFields::new().definitions.unwrap();
+    assert_eq!(definitions.types.len(),20);
+    assert_eq!(definitions.transaction_types.len(),31);
+    assert_eq!(definitions.transaction_results.len(),127);
+    let generic_field = DefinitionField {
+      nth: 0,
+      is_signing_field: false,
+      is_serialized: false,
+      is_vl_encoded: false,
+      type_name: String::from("Unknown")
+    };
+    assert_eq!(definitions.fields.get("Generic"),Some(&generic_field));
+  }
 
-    #[test]
-    fn test_get_definition_field(){
-      let fields = DefinitionFields::new();
-      let type_name: String = fields.get_definition_field("TransactionType".to_string(), "type").unwrap();
-      let is_vl_encoded: bool = fields.get_definition_field("TransactionType".to_string(), "isVLEncoded").unwrap();
-      let is_serialized: bool = fields.get_definition_field("TransactionType".to_string(), "isSerialized").unwrap();
-      let is_signing_field: bool = fields.get_definition_field("TransactionType".to_string(), "isSigningField").unwrap();
-      assert_eq!(type_name, "UInt16".to_string());
-      assert_eq!(is_vl_encoded, false);
-      assert_eq!(is_serialized, true);
-      assert_eq!(is_signing_field, true);
+  #[test]
+  fn test_get_definition_field(){
+    let fields = DefinitionFields::new();
+    let type_name: String = fields.get_definition_field("TransactionType".to_string(), "type").unwrap();
+    let is_vl_encoded: bool = fields.get_definition_field("TransactionType".to_string(), "isVLEncoded").unwrap();
+    let is_serialized: bool = fields.get_definition_field("TransactionType".to_string(), "isSerialized").unwrap();
+    let is_signing_field: bool = fields.get_definition_field("TransactionType".to_string(), "isSigningField").unwrap();
+    assert_eq!(type_name, "UInt16".to_string());
+    assert_eq!(is_vl_encoded, false);
+    assert_eq!(is_serialized, true);
+    assert_eq!(is_signing_field, true);
+  }
+  #[test]
+  fn test_get_field_id() {
+    let fields = DefinitionFields::new();
+    let keys: Vec<String> = vec!["TransactionType", "Flags", "Sequence", "Expiration", "OfferSequence", "hash", "TakerPays", "TakerGets", "Fee", "SigningPubKey", "TxnSignature", "Account"].into_iter().map(String::from).collect();
+    let mut result: HashMap<String, Bytes> = HashMap::new();
+    for key in keys {
+      let id_prefix= fields.get_field_id(key.clone());
+      result.insert(key, id_prefix.unwrap());
     }
-    #[test]
-    fn test_get_field_id() {
-      let fields = DefinitionFields::new();
-      let keys: Vec<String> = vec!["TransactionType", "Flags", "Sequence", "Expiration", "OfferSequence", "hash", "TakerPays", "TakerGets", "Fee", "SigningPubKey", "TxnSignature", "Account"].into_iter().map(String::from).collect();
-      let mut result: HashMap<String, Bytes> = HashMap::new();
-      for key in keys {
-        let id_prefix= fields.get_field_id(key.clone());
-        result.insert(key, id_prefix.unwrap());
-      }
-      assert_eq!(result.get("TransactionType").unwrap().slice(..),  b"\x12"[..]);
-      assert_eq!(result.get("Flags").unwrap().slice(..),  b"\x22"[..]);
-      assert_eq!(result.get("Sequence").unwrap().slice(..),  b"\x24"[..]);
-      assert_eq!(result.get("Expiration").unwrap().slice(..),  b"\x2a"[..]);
-      assert_eq!(result.get("OfferSequence").unwrap().slice(..),  b" \x19"[..]);
-      assert_eq!(result.get("TakerPays").unwrap().slice(..),  b"\x64"[..]);
-      assert_eq!(result.get("TakerGets").unwrap().slice(..),  b"\x65"[..]);
-      assert_eq!(result.get("Fee").unwrap().slice(..),  b"\x68"[..]);
-      assert_eq!(result.get("SigningPubKey").unwrap().slice(..),  b"\x73"[..]);
-      assert_eq!(result.get("TxnSignature").unwrap().slice(..),  b"\x74"[..]);
-      assert_eq!(result.get("Account").unwrap().slice(..),  b"\x81"[..]);
-    }
+    assert_eq!(result.get("TransactionType").unwrap().slice(..),  b"\x12"[..]);
+    assert_eq!(result.get("Flags").unwrap().slice(..),  b"\x22"[..]);
+    assert_eq!(result.get("Sequence").unwrap().slice(..),  b"\x24"[..]);
+    assert_eq!(result.get("Expiration").unwrap().slice(..),  b"\x2a"[..]);
+    assert_eq!(result.get("OfferSequence").unwrap().slice(..),  b" \x19"[..]);
+    assert_eq!(result.get("TakerPays").unwrap().slice(..),  b"\x64"[..]);
+    assert_eq!(result.get("TakerGets").unwrap().slice(..),  b"\x65"[..]);
+    assert_eq!(result.get("Fee").unwrap().slice(..),  b"\x68"[..]);
+    assert_eq!(result.get("SigningPubKey").unwrap().slice(..),  b"\x73"[..]);
+    assert_eq!(result.get("TxnSignature").unwrap().slice(..),  b"\x74"[..]);
+    assert_eq!(result.get("Account").unwrap().slice(..),  b"\x81"[..]);
+  }
 }

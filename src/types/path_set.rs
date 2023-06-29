@@ -3,9 +3,9 @@
 use bytes::{BytesMut, BufMut};
 use serde_json::Value;
 use crate::definition_fields::SerializeField;
-
+use alloc::vec::Vec;
 use super::amount::currency_code_to_bytes;
-use ripple_address_codec::decode_account_id;
+use crate::ripple_address_codec::decode_account_id;
 
 /// A structure represents `PathSet` type of field.
 pub struct PathSet {

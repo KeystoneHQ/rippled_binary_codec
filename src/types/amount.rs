@@ -1,12 +1,14 @@
 //! A structure that representing `Amount` type of field in ripple transaction and methods to serialize them to bytes.
 
-use std::convert::TryInto;
+use core::convert::TryInto;
 use ascii::AsciiStr;
 use bytes::{BytesMut, BufMut};
 use proc_macro_regex::regex;
-use ripple_address_codec::decode_account_id;
+use crate::ripple_address_codec::decode_account_id;
 use serde_json::Value;
 use rust_decimal::prelude::*;
+use alloc::string::{String,ToString};
+use alloc::vec::Vec;
 
 use crate::definition_fields::SerializeField;
 

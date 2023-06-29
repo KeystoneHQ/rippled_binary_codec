@@ -1,8 +1,9 @@
 //! A structure represents `AccountID` type of field in ripple transaction and methods to serialize them to bytes.
-use ripple_address_codec::decode_account_id;
+use crate::ripple_address_codec::decode_account_id;
 use serde_json::Value;
 use bytes::{BytesMut, BufMut};
 use crate::{definition_fields::SerializeField};
+use alloc::vec::Vec;
 
 /// Helper function for length-prefixed fields including `Blob` types
 /// and some `AccountID` types.
@@ -19,7 +20,7 @@ use crate::{definition_fields::SerializeField};
 ///
 ///```
 ///use rippled_binary_codec::types::account::vl_encode;
-///use ripple_address_codec::decode_account_id;
+///use rippled_binary_codec::ripple_address_codec::decode_account_id;
 ///
 ///fn vl_encode_example(){
 ///  let address = "rMBzp8CgpE441cp5PVyA9rpVV7oT8hP3ys";
@@ -96,7 +97,7 @@ impl SerializeField for Account {
 mod tests {
     use serde_json::json;
     use super::*;
-    use ripple_address_codec::decode_account_id;
+    use crate::ripple_address_codec::decode_account_id;
     use std::convert::TryInto;
     use crate::{definition_fields::SerializeField};
 
