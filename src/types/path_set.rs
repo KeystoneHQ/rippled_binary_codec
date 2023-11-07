@@ -48,7 +48,7 @@ impl SerializeField for PathSet {
   ///  If the field is failed to serialize, `None` will be returned.
   fn to_bytes(&self) -> Option<Vec<u8>>{
     if let Some(pathset) = self.data.as_array(){
-      let mut buf = BytesMut::with_capacity(1024);
+      let mut buf = BytesMut::with_capacity(0);
       for i in 0..pathset.len(){
           if let Some(path) = PathSet::path_as_bytes(pathset[i].clone()){
             buf.extend_from_slice(&path);
@@ -71,9 +71,9 @@ impl PathSet {
   /// representing one member of a pathset as a bytes object
   fn path_as_bytes( path: Value) -> Option<Vec<u8>> {
     if let Some(path) = path.as_array(){
-      let mut path_contents = BytesMut::with_capacity(1024);
+      let mut path_contents = BytesMut::with_capacity(0);
       for step in path {
-        let mut step_data = BytesMut::with_capacity(1024);
+        let mut step_data = BytesMut::with_capacity(0);
         if let Some(obj) = step.as_object(){
             let account_key = "account";
             let currency_key ="currency";
