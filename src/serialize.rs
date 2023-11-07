@@ -46,22 +46,28 @@ use alloc::vec::Vec;
 /// # Errors
 /// This serialization can fail either because the input json can not deserialize to [`serde_json::Value`][`Value`] or it's not a valid XRP transaction data. If it fails, `None` will be returned.
 ///
-pub fn serialize_tx(tx: String, for_signing: bool) -> Option<String> {
+pub fn serialize_tx(tx: String, for_signing: bool, definition_fields: Option<&DefinitionFields>) -> Option<String> {
+  let definition_fields = match definition_fields {
+    Some(definition_fields) => definition_fields,
+    None => {
+      let definition_fields = DefinitionFields::new();
+      return self::serialize_tx(tx, for_signing, Some(&definition_fields));
+    }
+  };
   let tx: Value = from_str(&tx).ok()?;
-  let fields = DefinitionFields::new();
   if let Some(tx) = tx.as_object() {
     let keys: Vec<String> = tx.keys().map(|item| item.to_string()).collect();
-    let field_order = fields.ordering_fields(keys);
-    let mut fields_as_bytes = BytesMut::with_capacity(1024);
+    let field_order = definition_fields.ordering_fields(keys);
+    let mut fields_as_bytes = BytesMut::with_capacity(0);
     for field_name in field_order {
-      let is_serialized = fields.get_definition_field(field_name.clone(), "isSerialized");
-      let is_signing_field = fields.get_definition_field(field_name.clone(), "isSigningField");
+      let is_serialized = definition_fields.get_definition_field(field_name.clone(), "isSerialized");
+      let is_signing_field = definition_fields.get_definition_field(field_name.clone(), "isSigningField");
       if is_serialized == Some(true) {
         if for_signing && is_signing_field != Some(true) {
           continue
         }
-        let field_val =  fields.get_field_by_name(tx.clone(), field_name.as_str())?;
-        let field_bytes = fields.field_to_bytes(field_name, field_val)?;
+        let field_val =  definition_fields.get_field_by_name(tx, field_name.as_str())?;
+        let field_bytes = definition_fields.field_to_bytes(field_name, field_val, definition_fields)?;
         fields_as_bytes.extend_from_slice(&field_bytes);
       }
     }
@@ -91,7 +97,7 @@ mod tests {
     "SigningPubKey": "03F5C5BB1D19EC710D3D7FAD199AF10CF8BC1D11348E5B3765C0B0B9C0BEC32879"
 }"#;
       let expected= "12001422800200002404C49431201B04CAF59363D7038D7EA4C68000534F4C4F000000000000000000000000000000001EB3EAA3AD86242E1D51DC502DD6566BD39E06A668400000000000000C732103F5C5BB1D19EC710D3D7FAD199AF10CF8BC1D11348E5B3765C0B0B9C0BEC328798114A6C3D314FB5418627AB22D9DDF6C18AED5F6CA89";
-      let output = serialize_tx(input.to_string(), true);
+      let output = serialize_tx(input.to_string(), true, None);
       assert_eq!(output.unwrap(), expected);
     }
 
@@ -116,7 +122,7 @@ mod tests {
         "hash": "73734B611DDA23D3F5F62E20A173B78AB8406AC5015094DA53F53D39B9EDB06C"
         }"#;
         let expected= "120007220008000024001ABED82A2380BF2C2019001ABED764D55920AC9391400000000000000000000000000055534400000000000A20B3C85F482532A9578DBB3950B85CA06594D165400000037E11D60068400000000000000A732103EE83BB432547885C219634A1BC407A9DB0474145D69737D09CCDC63E1DEE7FE38114DD76483FACDEE26E60D8A586BB58D09F27045C46";
-        let output = serialize_tx(input.to_string(), true);
+        let output = serialize_tx(input.to_string(), true, None);
        assert_eq!(output.unwrap(), expected);
     }
 
@@ -136,7 +142,7 @@ mod tests {
         "hash": "E922D7E4CBEBAF0D670D20220F1735A105D8C1ECCB42C0ED10AC6FF975DC06C0"
       }"#;
       let expected= "1200002280000000230000000024000D6BA16140000001640C3C906840000000000003E873210255EECA852E7C26C0219F0792D1229F1147366D4C936FF3ED83AC32354F6F8EF38114E23E1F811DC4A4AD525F73D6B17F07C9FA127B388314FF4D447732C13CB9BEC7A4653B08304AAB63F519";
-      let output = serialize_tx(input.to_string(), true);
+      let output = serialize_tx(input.to_string(), true, None);
       assert_eq!(output.unwrap(), expected);
     }
 
@@ -156,7 +162,7 @@ mod tests {
         "hash": "F9ECB5D46EFE0BA6C848DC002584F737049401BCEA0D820FD253801E04A63B8C"
       }"#;
       let expected= "1200002280000000230000000024000C8A5761400000001DCD61186840000000000003E873210255EECA852E7C26C0219F0792D1229F1147366D4C936FF3ED83AC32354F6F8EF38114E23E1F811DC4A4AD525F73D6B17F07C9FA127B3883147839399F25EC87AFB3C7DAB8243DDD0C46C421DE";
-      let output = serialize_tx(input.to_string(), true);
+      let output = serialize_tx(input.to_string(), true, None);
       assert_eq!(output.unwrap(), expected);
     }
 
@@ -221,7 +227,7 @@ mod tests {
           "hash": "B521424226FC100A2A802FE20476A5F8426FD3F720176DC5CCCE0D75738CC208"
         }"#;
       let expected= "1200002200000000240000034A201B009717BE61400000000098968068400000000000000C69D4564B964A845AC0000000000000000000000000555344000000000069D33B18D53385F8A3185516C2EDA5DEDB8AC5C673210379F17CFA0FFD7518181594BE69FE9A10471D6DE1F4055C6D2746AFD6CF89889E811469D33B18D53385F8A3185516C2EDA5DEDB8AC5C6831469D33B18D53385F8A3185516C2EDA5DEDB8AC5C6F9EA7C06636C69656E747D077274312E312E31E1F1011201F3B1997562FD742B54D4EBDEA1D6AEA3D4906B8F100000000000000000000000000000000000000000FF014B4E9C06F24296074F7BC48F92A97916C6DC5EA901DD39C650A96EDA48334E70CC4A85B8B2E8502CD310000000000000000000000000000000000000000000";
-      let output = serialize_tx(input.to_string(), true);
+      let output = serialize_tx(input.to_string(), true, None);
       assert_eq!(output.unwrap(), expected);
     }
 
@@ -229,7 +235,7 @@ mod tests {
     fn test_serialize_tx5(){
         let input = r#"{"TransactionType":"AccountDelete","Fee":"2000000","Flags":2147483648,"Destination":"rNp5zaiaR3maZ8zALz5CWnqRYXWkeGhteS","Account":"rwEJf6YSKALUaxRhvJ1S81PPmXzWhDW8on","Sequence":23159180,"LastLedgerSequence":23164152,"SigningPubKey":"02B87CEB1507849B6473773155827C0B8C15CB311C6876FBD7FAB95F06D3E18E39"}"#;
         let expected= "1200152280000000240161618C201B016174F86840000000001E8480732102B87CEB1507849B6473773155827C0B8C15CB311C6876FBD7FAB95F06D3E18E398114656D3E2961EFABDED0C9CDCFB39FC78D01E9A77683148EED191963FEB29D532F04958BFA087A45F742C7";
-        let output = serialize_tx(input.to_string(), true);
+        let output = serialize_tx(input.to_string(), true, None);
         assert_eq!(output.unwrap(), expected);
     }
 }

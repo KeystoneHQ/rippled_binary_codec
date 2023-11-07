@@ -34,7 +34,7 @@ use alloc::vec::Vec;
 ///  If the field is failed to encode, `None` will be returned.
 pub fn vl_encode(input: Vec<u8>) -> Option<Vec<u8>>{
   let mut vl_len: u32 = input.len() as u32;
-  let mut result = BytesMut::with_capacity(1024);
+  let mut result = BytesMut::with_capacity(0);
   if vl_len <= 192 {
     let byte1: u8 = vl_len.to_be_bytes()[3];
     result.put_u8(byte1);

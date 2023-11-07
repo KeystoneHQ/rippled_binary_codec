@@ -147,7 +147,7 @@ impl SerializeField for Amount {
   fn to_bytes(&self) -> Option<Vec<u8>> {
     if let Some(input) = self.data.as_str() {
       if let Ok(mut amount) = i64::from_str(input){
-        let mut buf = BytesMut::with_capacity(1024);
+        let mut buf = BytesMut::with_capacity(0);
         let base: i64 = 10;
         if amount >= 0 && amount <= base.pow(17) {
           amount |= i64::from_str_radix("4000000000000000", 16).ok()?;
@@ -170,7 +170,7 @@ impl SerializeField for Amount {
           let issued_amt = IssuedAmount {
             strnum: strnum.to_string()
           };
-          let mut result = BytesMut::with_capacity(1024);
+          let mut result = BytesMut::with_capacity(0);
           let issue_amount = issued_amt.to_bytes()?;
           let currency = obj.get(currency)?;
           let currency = currency.as_str()?;
