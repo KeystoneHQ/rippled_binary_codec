@@ -19,6 +19,7 @@ impl SerializeField for STObject<'_>{
   ///```
   ///use rippled_binary_codec::types::stobject::STObject;
   ///use rippled_binary_codec::definition_fields::SerializeField;
+  ///use rippled_binary_codec::definition_fields::DefinitionFields;
   ///use serde_json::json;
   ///
   ///fn object_to_bytes_example(){
@@ -27,7 +28,8 @@ impl SerializeField for STObject<'_>{
   ///         "Account": "rUpy3eEg8rqjqfUoLeBnZkscbKbFsKXC3v"
   ///     }
   ///  });
-  ///  let bytes = STObject{data: input}.to_bytes().unwrap();
+  ///  let definition_fields = DefinitionFields::new();
+  ///  let bytes = STObject{data: input, definition_fields: &definition_fields}.to_bytes().unwrap();
   ///  println!("serialized object: {:?}", bytes); // b"\x81\x14y\x08\xa7\xf0\xed\xd4\x8e\xa8\x96\xc3X\n9\x9f\x0e\xe7\x86\x11\xc8\xe3\xe1"
   ///}
   ///```
@@ -46,7 +48,7 @@ impl SerializeField for STObject<'_>{
           let is_serialized = self.definition_fields.get_definition_field(field_name.clone(), "isSerialized");
           if is_serialized == Some(true){
             let field_val: Value =  self.definition_fields.get_field_by_name(inner_obj, field_name.as_str())?;
-            let field_bytes : Vec<u8> = self.definition_fields.field_to_bytes(field_name, field_val, self.definition_fields)?;
+            let field_bytes : Vec<u8> = self.definition_fields.field_to_bytes(field_name, field_val)?;
             buf.extend_from_slice(&field_bytes);
           }
         }
