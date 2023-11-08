@@ -256,7 +256,7 @@ impl DefinitionFields {
   ///```
   /// # Errors
   ///  If the field is failed to serialize, `None` will be returned.
-  pub fn field_to_bytes(&self, field_name: String, field_val: serde_json::Value, definition_fields: &DefinitionFields) -> Option<Vec<u8>> {
+  pub fn field_to_bytes(&self, field_name: String, field_val: serde_json::Value) -> Option<Vec<u8>> {
     let field_type : String = self.get_definition_field(field_name.clone(), "type")?;
     let id_prefix: Bytes = self.get_field_id(field_name.clone())?;
     let mut buf = BytesMut::with_capacity(0);
@@ -301,10 +301,10 @@ impl DefinitionFields {
         PathSet {data: field_val}.to_bytes()
       },
       "STArray"=>{
-        STArray {data: field_val, definition_fields}.to_bytes()
+        STArray {data: field_val, definition_fields: &self}.to_bytes()
       },
       "STObject"=>{
-        STObject{data: field_val, definition_fields}.to_bytes()
+        STObject{data: field_val, definition_fields: &self}.to_bytes()
       },
       "UInt8"=>{
         let input: u64 = field_val.as_u64()?;
@@ -362,7 +362,7 @@ mod tests {
   #[test]
   fn test_field_to_bytes(){
     let fields = DefinitionFields::new();
-    let expiration: Vec<u8> = fields.field_to_bytes("Expiration".to_string(),Value::from(595640108), &DefinitionFields::new()).unwrap();
+    let expiration: Vec<u8> = fields.field_to_bytes("Expiration".to_string(),Value::from(595640108)).unwrap();
     assert_eq!(expiration, [42, 35, 128, 191, 44]);
   }
   #[test]

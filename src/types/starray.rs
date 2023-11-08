@@ -21,6 +21,7 @@ impl SerializeField for STArray<'_> {
   ///```
   ///use rippled_binary_codec::types::starray::STArray;
   ///use rippled_binary_codec::definition_fields::SerializeField;
+  ///use rippled_binary_codec::definition_fields::DefinitionFields;
   ///use serde_json::json;
   ///
   /// fn array_to_bytes_example(){
@@ -31,7 +32,8 @@ impl SerializeField for STArray<'_> {
   ///        }
   ///    }
   ///   ]);
-  ///   let bytes = STArray {data: input}.to_bytes().unwrap();
+  ///   let definition_fields = DefinitionFields::new();
+  ///   let bytes = STArray {data: input, definition_fields: &definition_fields}.to_bytes().unwrap();
   ///   println!("serialized array: {:?}", bytes); // b"\xea}\x04rent\xe1\xf1"
   /// }
   ///```
@@ -44,7 +46,7 @@ impl SerializeField for STArray<'_> {
       for el in data.into_iter(){
         if let Some(inner) = el.as_object(){
           let wrapper_keys: Vec<String> = inner.keys().cloned().collect();
-          let fields = self.definition_fields.field_to_bytes(wrapper_keys[0].to_owned(),el.to_owned(), self.definition_fields);
+          let fields = self.definition_fields.field_to_bytes(wrapper_keys[0].to_owned(),el.to_owned());
             if let Some(fields) = fields {
               buf.extend_from_slice(&fields);
             }
