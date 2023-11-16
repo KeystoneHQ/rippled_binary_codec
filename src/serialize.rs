@@ -60,10 +60,10 @@ pub fn serialize_tx(tx: String, for_signing: bool, definition_fields: Option<&De
     let field_order = definition_fields.ordering_fields(keys);
     let mut fields_as_bytes = BytesMut::with_capacity(0);
     for field_name in field_order {
-      let is_serialized = definition_fields.get_definition_field(field_name.clone(), "isSerialized");
-      let is_signing_field = definition_fields.get_definition_field(field_name.clone(), "isSigningField");
-      if is_serialized == Some(true) {
-        if for_signing && is_signing_field != Some(true) {
+      let is_serialized = definition_fields.get_definition_field(field_name.clone())?.is_serialized;
+      let is_signing_field = definition_fields.get_definition_field(field_name.clone())?.is_signing_field;
+      if is_serialized {
+        if for_signing && !is_signing_field {
           continue
         }
         let field_val =  definition_fields.get_field_by_name(tx, field_name.as_str())?;
