@@ -45,8 +45,8 @@ impl SerializeField for STObject<'_>{
         let child_order = self.definition_fields.ordering_fields(inner_keys);
         let mut buf = BytesMut::with_capacity(0);
         for field_name in child_order {
-          let is_serialized = self.definition_fields.get_definition_field(field_name.clone(), "isSerialized");
-          if is_serialized == Some(true){
+          let is_serialized = self.definition_fields.get_definition_field(field_name.clone())?.is_serialized;
+          if is_serialized {
             let field_val: Value =  self.definition_fields.get_field_by_name(inner_obj, field_name.as_str())?;
             let field_bytes : Vec<u8> = self.definition_fields.field_to_bytes(field_name, field_val)?;
             buf.extend_from_slice(&field_bytes);

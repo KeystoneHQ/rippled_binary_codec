@@ -1,5 +1,6 @@
 //! A `DefinitionFields` structure to represent the [`definitions.json`](https://github.com/KeystoneHQ/rippled_binary_codec/blob/main/src/fixtures/definitions.json) JSON data and methods to manipulate the fields.
 
+use core::convert::TryInto;
 use core::{cmp::Ordering, fmt::Debug};
 use bytes::{BufMut, Bytes, BytesMut};
 use serde::{Serialize, de::DeserializeOwned};
@@ -7,8 +8,7 @@ use serde_json::from_str;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use crate::alloc::borrow::ToOwned;
-use alloc::collections::btree_map::BTreeMap;
-use crate::types::{account::Account, amount::Amount, blob::Blob, definition::Definitions, hash::Hash, path_set::PathSet, starray::STArray, stobject::STObject};
+use crate::types::{account::Account, amount::Amount, blob::Blob, definition::{Definitions, DefinitionField}, hash::Hash, path_set::PathSet, starray::STArray, stobject::STObject};
 
 /// A trait to be implemented by each field for serialization.
 pub trait SerializeField {
@@ -81,7 +81,7 @@ impl DefinitionFields {
   /// # Errors
   ///  If it fails to get the `type_order` or `field_order`, `(-1,-1)` will be returned.
   pub fn get_field_sort_key(&self, field_name: String)-> (i32, i32){
-    match self.definitions.clone() {
+    match &self.definitions {
       Some(definitions)=>{
         if let Some(field_type_name) = definitions.fields.get(&field_name).and_then(|f| Some(f.to_owned().type_name)){
           if let Some(type_sort_key) = definitions.types.get(&field_type_name).to_owned(){
@@ -115,8 +115,8 @@ impl DefinitionFields {
   pub fn ordering_fields(&self, fields: Vec<String>)-> Vec<String>{
     let mut sort_key: Vec<(i32, i32)> = Vec::new();
     let mut keys = fields.to_owned();
-    for key in keys.clone() {
-      let field = self.get_field_sort_key(key);
+    for key in &keys {
+      let field = self.get_field_sort_key(key.to_string());
       sort_key.push(field);
     }
     keys.sort_by(|a, b| {
@@ -175,8 +175,8 @@ impl DefinitionFields {
   ///
   ///fn get_definition_field_example(){
   ///  let fields = DefinitionFields::new();
-  ///  let type_name: String = fields.get_definition_field("TransactionType".to_string(), "type").unwrap();
-  ///  let is_signing_field: bool = fields.get_definition_field("TransactionType".to_string(), "isSigningField").unwrap();
+  ///  let type_name: String = fields.get_definition_field("TransactionType".to_string()).unwrap().type_name.clone();
+  ///  let is_signing_field: bool = fields.get_definition_field("TransactionType".to_string()).unwrap().is_signing_field;
   ///  println!("type_name: {}", type_name); // "UInt16"
   ///  println!("is_signing_field: {}", is_signing_field); // true
   ///}
@@ -184,14 +184,9 @@ impl DefinitionFields {
   ///
   /// # Errors
   ///  If the `field_name` is not in [`definitions.json`] or `key` is not in the [`DefinitionField`][`crate::types::definition::DefinitionField`], `None` will be returned.
-  pub fn get_definition_field<R>(&self, field_name: String, key: &str) -> Option<R>
-    where
-        R: DeserializeOwned,
+  pub fn get_definition_field(&self, field_name: String) -> Option<&DefinitionField>
   {
-    let definitions = self.definitions.as_ref()?;
-    let fields: BTreeMap<serde_value::Value,serde_value::Value> = self.get_field_by_name(definitions.to_owned(),"FIELDS")?;
-    let field: BTreeMap<serde_value::Value, serde_value::Value> = self.get_field_by_name(fields, field_name.as_str())?;
-    return self.get_field_by_name(field, key)?;
+    self.definitions.as_ref()?.fields.get(&field_name)
   }
 
   fn cal_field_id(&self, field_code: i32, type_code: i32) -> Bytes {
@@ -217,11 +212,9 @@ impl DefinitionFields {
   /// Return the unique field id for a given field name, this field id consists of the type code ant field code, in 1 to 3 bytes
   /// depending on whether those values are "common"(<16) or "uncommon"<>=16>.
   pub fn get_field_id(&self, field_name: String) -> Option<Bytes>{
-    let definitions = self.definitions.as_ref()?;
-    let field_type: String = self.get_definition_field(field_name.clone(), "type")?;
-    let field_code =  self.get_definition_field(field_name, "nth")?;
-    let types: BTreeMap<serde_value::Value,serde_value::Value> = self.get_field_by_name(definitions.to_owned(), "TYPES")?;
-    let type_code: i32 = self.get_field_by_name(types, &field_type)?;
+    let field_type = &self.get_definition_field(field_name.clone())?.type_name;
+    let field_code =  self.get_definition_field(field_name)?.nth;
+    let type_code = self.definitions.as_ref()?.types.get(field_type)?.clone();
     return Some(self.cal_field_id(field_code, type_code));
   }
 
@@ -257,17 +250,21 @@ impl DefinitionFields {
   /// # Errors
   ///  If the field is failed to serialize, `None` will be returned.
   pub fn field_to_bytes(&self, field_name: String, field_val: serde_json::Value) -> Option<Vec<u8>> {
-    let field_type : String = self.get_definition_field(field_name.clone(), "type")?;
+    let field_type = self.get_definition_field(field_name.clone())?.type_name.clone();
     let id_prefix: Bytes = self.get_field_id(field_name.clone())?;
     let mut buf = BytesMut::with_capacity(0);
-    let definitions = self.definitions.as_ref()?;
     if field_name == "TransactionType".to_string() {
       buf.extend_from_slice(&id_prefix);
-      let types: BTreeMap<serde_value::Value,serde_value::Value> = self.get_field_by_name(definitions.to_owned(), "TRANSACTION_TYPES")?;
-      let field_val =field_val.as_str()?;
-      let type_unit: u16 = self.get_field_by_name::<BTreeMap<serde_value::Value,serde_value::Value> ,u16>(types, &field_val)?;
-      buf.put_u16(type_unit);
-      return Some(buf.to_vec());
+      let type_unit: Result<u16, _> = self.definitions.as_ref()?.transaction_types.get(field_val.as_str()?)?.clone().try_into();
+      match type_unit {
+        Ok(type_unit) => {
+          buf.put_u16(type_unit);
+          return Some(buf.to_vec());
+        },
+        Err(_) => {
+          return None;
+        }
+      }
     }
     let slice: Vec<u8> = match field_type.as_str() {
       "AccountID" => {
@@ -395,10 +392,10 @@ mod tests {
   #[test]
   fn test_get_definition_field(){
     let fields = DefinitionFields::new();
-    let type_name: String = fields.get_definition_field("TransactionType".to_string(), "type").unwrap();
-    let is_vl_encoded: bool = fields.get_definition_field("TransactionType".to_string(), "isVLEncoded").unwrap();
-    let is_serialized: bool = fields.get_definition_field("TransactionType".to_string(), "isSerialized").unwrap();
-    let is_signing_field: bool = fields.get_definition_field("TransactionType".to_string(), "isSigningField").unwrap();
+    let type_name = fields.get_definition_field("TransactionType".to_string()).unwrap().type_name.clone();
+    let is_vl_encoded: bool = fields.get_definition_field("TransactionType".to_string()).unwrap().is_vl_encoded;
+    let is_serialized: bool = fields.get_definition_field("TransactionType".to_string()).unwrap().is_serialized;
+    let is_signing_field: bool = fields.get_definition_field("TransactionType".to_string()).unwrap().is_signing_field;
     assert_eq!(type_name, "UInt16".to_string());
     assert_eq!(is_vl_encoded, false);
     assert_eq!(is_serialized, true);
